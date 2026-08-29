@@ -1,6 +1,6 @@
-# [Project name]
+# PPE Lifecycle Tracker
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+PPE control-room software for tracking employee equipment lifecycle, inspections, replacements, and subcenter PPR requirements.
 
 ## Run & Operate
 
@@ -22,23 +22,32 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/ppe-lifecycle-tracker/src/App.tsx` — routes, local store, dashboard, register, requirements, person detail, and settings screens
+- `artifacts/ppe-lifecycle-tracker/src/data.ts` — PPE rule definitions and workbook-to-app normalization
+- `artifacts/ppe-lifecycle-tracker/src/data/sourceData.json` — normalized records imported from the supplied workbook
+- `artifacts/ppe-lifecycle-tracker/src/index.css` — shared visual theme and responsive layout
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first version is a client-side operational tool using localStorage so edits, status updates, and rule changes persist without requiring a separate service.
+- Source workbook rows are normalized to the two requested skill profiles; the workbook's Climbing Helmet fields are presented as Helmet (WAH).
+- Every PPE item required by a skill is materialized on each employee record. Blank, zero-quantity, Faulty, NOK/Nok, and Missing values are excluded from available stock.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Dashboard shows overall coverage, open replacement actions, PPR units to source, and subcenter readiness.
+- PPE register supports search, skill/subcenter/readiness filters, inline lifecycle editing, and CSV export.
+- Requirements view groups PPR needs by subcenter and skill, supports gap-only filtering, and exports procurement CSV.
+- Settings supports per-skill quantities, JSON snapshot import/export, and restoration to the supplied workbook snapshot.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+No saved preferences.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run the web artifact through its managed workflow so PORT and BASE_PATH are provided to Vite.
+- The PPR calculation uses only status OK with quantity greater than zero as available stock.
 
 ## Pointers
 

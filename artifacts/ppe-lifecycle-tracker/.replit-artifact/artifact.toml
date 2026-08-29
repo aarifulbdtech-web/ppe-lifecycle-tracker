@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "PPE Lifecycle Tracker"
+description = "A PPE lifecycle management app for tracking employee equipment, inspections, faults, missing items, and subcenter PPR requirements by skill."
+version = "1.0.0"
+id = "artifacts/ppe-lifecycle-tracker"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23677
+
+[services.development]
+run = "pnpm --filter @workspace/ppe-lifecycle-tracker run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ppe-lifecycle-tracker", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ppe-lifecycle-tracker/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23677"
+BASE_PATH = "/"
