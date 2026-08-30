@@ -39,30 +39,19 @@ export const DEFAULT_RULES: RuleSet = {
     'Helmet (Network Site)',
     'Safety Vest',
     'Insulated Rubber Gloves',
-    'Safety Shoe',
     'Loading Gloves',
-    'Life Jacket',
-    'Headlamp',
-    'Raincoat',
-    'Knee High Safety Boot',
-    'Eye Goggles',
+    'Safety Shoe',
   ],
   'Electrical & WAH': [
     'Helmet (WAH)',
     'Safety Vest',
-    'Insulated Rubber Gloves',
-    'Safety Shoe',
-    'Loading Gloves',
+    'Hand Gloves (WAH)',
     'Full Body Harness',
     'Shock Absorber Lanyard',
     'Y Positioning Lanyard',
     'Carabiner',
-    'Hand Gloves (WAH)',
-    'Life Jacket',
-    'Headlamp',
-    'Raincoat',
-    'Knee High Safety Boot',
-    'Eye Goggles',
+    'Insulated Rubber Gloves',
+    'Safety Shoe',
   ],
 };
 
@@ -206,15 +195,13 @@ export function ruleName(value: string) {
 }
 
 export function mergeRulesWithDefaults(stored: RuleSet | undefined): RuleSet {
+  const migrate = (skill: keyof RuleSet) =>
+    DEFAULT_RULES[skill].map((item) =>
+      stored?.[skill]?.find((rawItem) => ruleName(rawItem) === item) ?? item,
+    );
   return {
-    Electrical: [
-      ...(stored?.Electrical ?? []),
-      ...DEFAULT_RULES.Electrical.filter((item) => !(stored?.Electrical ?? []).some((rawItem) => ruleName(rawItem) === item)),
-    ],
-    'Electrical & WAH': [
-      ...(stored?.['Electrical & WAH'] ?? []),
-      ...DEFAULT_RULES['Electrical & WAH'].filter((item) => !(stored?.['Electrical & WAH'] ?? []).some((rawItem) => ruleName(rawItem) === item)),
-    ],
+    Electrical: migrate('Electrical'),
+    'Electrical & WAH': migrate('Electrical & WAH'),
   };
 }
 
