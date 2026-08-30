@@ -41,6 +41,11 @@ export const DEFAULT_RULES: RuleSet = {
     'Insulated Rubber Gloves',
     'Safety Shoe',
     'Loading Gloves',
+    'Life Jacket',
+    'Headlamp',
+    'Raincoat',
+    'Knee High Safety Boot',
+    'Eye Goggles',
   ],
   'Electrical & WAH': [
     'Helmet (WAH)',
@@ -52,6 +57,12 @@ export const DEFAULT_RULES: RuleSet = {
     'Shock Absorber Lanyard',
     'Y Positioning Lanyard',
     'Carabiner',
+    'Hand Gloves (WAH)',
+    'Life Jacket',
+    'Headlamp',
+    'Raincoat',
+    'Knee High Safety Boot',
+    'Eye Goggles',
   ],
 };
 
@@ -103,6 +114,12 @@ const itemKeyByLabel: Record<string, string> = {
   'Shock Absorber Lanyard': 'shockAbsorberLanyard',
   'Y Positioning Lanyard': 'yPositioningLanyard',
   Carabiner: 'carabiner',
+  'Hand Gloves (WAH)': 'handGlovesWah',
+  'Life Jacket': 'lifeJacket',
+  Headlamp: 'headlamp',
+  Raincoat: 'raincoat',
+  'Knee High Safety Boot': 'kneeHighSafetyBoot',
+  'Eye Goggles': 'eyeGoggles',
 };
 
 function normalizeStatus(value: string, quantity: number): AssignmentStatus {
@@ -183,6 +200,34 @@ export const SOURCE_ACTIVITIES: Activity[] = sourceData.activity.map(
           : 'Transfer record opened',
   }),
 );
+
+export function ruleName(value: string) {
+  return value.split('::')[0];
+}
+
+export function mergeRulesWithDefaults(stored: RuleSet | undefined): RuleSet {
+  return {
+    Electrical: [
+      ...(stored?.Electrical ?? []),
+      ...DEFAULT_RULES.Electrical.filter((item) => !(stored?.Electrical ?? []).some((rawItem) => ruleName(rawItem) === item)),
+    ],
+    'Electrical & WAH': [
+      ...(stored?.['Electrical & WAH'] ?? []),
+      ...DEFAULT_RULES['Electrical & WAH'].filter((item) => !(stored?.['Electrical & WAH'] ?? []).some((rawItem) => ruleName(rawItem) === item)),
+    ],
+  };
+}
+
+export function ensureRequiredAssignments(employees: Employee[], rules: RuleSet): Employee[] {
+  return employees.map((employee) => {
+    const requiredItems = rules[employee.skill].map(ruleName);
+    const existingByItem = new Map(employee.assignments.map((assignment) => [assignment.item, assignment]));
+    const assignments = requiredItems.map((item) => existingByItem.get(item) ?? toAssignment(item, undefined));
+    const requiredSet = new Set(requiredItems);
+    const legacyAssignments = employee.assignments.filter((assignment) => !requiredSet.has(assignment.item));
+    return { ...employee, assignments: [...assignments, ...legacyAssignments] };
+  });
+}
 
 export const cloneSource = () =>
   JSON.parse(JSON.stringify(SOURCE_EMPLOYEES)) as Employee[];
