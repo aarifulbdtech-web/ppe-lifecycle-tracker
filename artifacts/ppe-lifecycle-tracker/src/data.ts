@@ -67,6 +67,54 @@ export const TRACEABLE_PPE_ITEMS = [
   'Helmet (WAH)',
 ];
 
+const EXCEL_INSULATED_GLOVE_IDS = new Set([
+  '6644', '6651', '10584', '11837', '11315', '11769', '6652', '11120', '11765',
+  '6712', '7113', '10055', '10771', '11007', '11824', '11830', '11869', '6424',
+  '8145', '10167', '11186', '11901', '10058', '10732', '10820', '11437', '6653',
+  '8204', '8289', '8638', '9311', '9769', '10102', '9975', '10190', '10035',
+  '10470', '11832', '11833', '11547', '1611', '11203', '10345', '10756', '11718',
+  '8378', '8777', '11835', '10312', '11250', '11866', '10529', '11113', '11279',
+  '9793', '11420', '11836', '11843', '11746', '12025', '6966', '11981', '8363',
+]);
+
+const EXCEL_ADELA_IDS = new Set(['11553', '10514', '11203', '8378']);
+
+type Traceability = Pick<PPEAssignment, 'brandName' | 'manufacturerDate' | 'expiryDate'>;
+
+function workbookTraceability(sourceEmployee: SourceEmployee, item: string): Traceability {
+  const employeeId = String(sourceEmployee.id);
+  if (item === 'Insulated Rubber Gloves' && EXCEL_INSULATED_GLOVE_IDS.has(employeeId)) {
+    return { brandName: 'Kavach', manufacturerDate: '2025-01-01', expiryDate: '2027-01-01' };
+  }
+  if (sourceEmployee.skill !== 'Electrical & WAH') {
+    return { brandName: '', manufacturerDate: '', expiryDate: '' };
+  }
+  if (item === 'Helmet (WAH)') {
+    return employeeId === '11228'
+      ? { brandName: '', manufacturerDate: '2022-10-22', expiryDate: '2027-10-22' }
+      : { brandName: '', manufacturerDate: '2022-11-22', expiryDate: '2027-11-22' };
+  }
+  if (item === 'Full Body Harness') {
+    return EXCEL_ADELA_IDS.has(employeeId)
+      ? { brandName: 'ADELA', manufacturerDate: '2024-01-01', expiryDate: '2029-01-01' }
+      : { brandName: 'Karam', manufacturerDate: '2022-10-22', expiryDate: '2027-10-27' };
+  }
+  if (item === 'Shock Absorber Lanyard' || item === 'Y Positioning Lanyard') {
+    return EXCEL_ADELA_IDS.has(employeeId)
+      ? { brandName: 'ADELA', manufacturerDate: '', expiryDate: '' }
+      : { brandName: 'Karam', manufacturerDate: '2022-05-22', expiryDate: '2027-05-22' };
+  }
+  if (item === 'Carabiner') {
+    if (EXCEL_ADELA_IDS.has(employeeId)) {
+      return { brandName: 'ADELA', manufacturerDate: '', expiryDate: '' };
+    }
+    return employeeId === '7477'
+      ? { brandName: 'Karam', manufacturerDate: '2022-10-14', expiryDate: '2027-10-14' }
+      : { brandName: 'Karam', manufacturerDate: '2021-10-14', expiryDate: '2027-10-14' };
+  }
+  return { brandName: '', manufacturerDate: '', expiryDate: '' };
+}
+
 type SourceAssignment = {
   item: string;
   id: string;
@@ -188,9 +236,16 @@ export const SOURCE_EMPLOYEES: Employee[] = sourceData.employees.map(
       designation: sourceEmployee.designation,
       skill,
       subcenter: sourceEmployee.subcenter,
-      assignments: requiredItems.map((item) =>
-        toAssignment(item, sourceEmployee.ppe[itemKeyByLabel[item]]),
-      ),
+      assignments: requiredItems.map((item) => {
+        const assignment = toAssignment(item, sourceEmployee.ppe[itemKeyByLabel[item]]);
+        const workbookMetadata = workbookTraceability(sourceEmployee, item);
+        return {
+          ...assignment,
+          brandName: assignment.brandName || workbookMetadata.brandName,
+          manufacturerDate: assignment.manufacturerDate || workbookMetadata.manufacturerDate,
+          expiryDate: assignment.expiryDate || workbookMetadata.expiryDate,
+        };
+      }),
     };
   },
 );
@@ -232,14 +287,16 @@ export function ensureRequiredAssignments(employees: Employee[], rules: RuleSet)
     const existingByItem = new Map(employee.assignments.map((assignment) => [assignment.item, assignment]));
     const assignments = requiredItems.map((item) => {
       const existing = existingByItem.get(item);
+      const sourceAssignment = SOURCE_EMPLOYEES.find((sourceEmployee) => sourceEmployee.id === employee.id)
+        ?.assignments.find((assignment) => assignment.item === item);
       return existing
         ? {
             ...existing,
-            brandName: existing.brandName || '',
-            manufacturerDate: existing.manufacturerDate || '',
-            expiryDate: existing.expiryDate || '',
+            brandName: existing.brandName || sourceAssignment?.brandName || '',
+            manufacturerDate: existing.manufacturerDate || sourceAssignment?.manufacturerDate || '',
+            expiryDate: existing.expiryDate || sourceAssignment?.expiryDate || '',
           }
-        : toAssignment(item, undefined);
+        : sourceAssignment ?? toAssignment(item, undefined);
     });
     const requiredSet = new Set(requiredItems);
     const legacyAssignments = employee.assignments
