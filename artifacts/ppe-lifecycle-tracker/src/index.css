@@ -225,6 +225,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .section-stack { display: grid; gap: 15px; }
 .assignment-list { display: grid; gap: 0; }
 .assignment-row { display: grid; grid-template-columns: 1.2fr .76fr .58fr .78fr .78fr .78fr 88px; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid hsl(var(--border)); }
+.traceability-fields { margin: -3px 0 9px; padding: 10px 12px 12px; border: 1px solid hsl(var(--border)); border-radius: 10px; background: hsl(42 32% 97%); }
+.traceability-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-size: 12px; }
+.traceability-heading span { color: hsl(var(--muted-foreground)); font-size: 11px; }
+.traceability-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 10px; }
 .assignment-row:first-child { border-top: 0; padding-top: 0; }
 .assignment-item { font-weight: 700; font-size: 12px; }
 .assignment-id { color: hsl(var(--muted-foreground)); font: 10px var(--app-font-mono); margin-top: 3px; }
@@ -277,5 +281,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .detail-grid { grid-template-columns: 1fr; }
   .assignment-row { grid-template-columns: 1fr 1fr; gap: 10px; }
   .assignment-row > :nth-child(4), .assignment-row > :nth-child(5) { display: none; }
+  .traceability-grid { grid-template-columns: 1fr; }
+  .traceability-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
   .profile-card { padding: 18px; }
 }

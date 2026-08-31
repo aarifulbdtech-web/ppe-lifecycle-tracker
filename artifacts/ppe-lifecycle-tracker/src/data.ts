@@ -11,6 +11,9 @@ export type PPEAssignment = {
   inspectionDate: string;
   status: AssignmentStatus;
   reason: string;
+  brandName: string;
+  manufacturerDate: string;
+  expiryDate: string;
 };
 
 export type Employee = {
@@ -55,6 +58,15 @@ export const DEFAULT_RULES: RuleSet = {
   ],
 };
 
+export const TRACEABLE_PPE_ITEMS = [
+  'Insulated Rubber Gloves',
+  'Full Body Harness',
+  'Shock Absorber Lanyard',
+  'Y Positioning Lanyard',
+  'Carabiner',
+  'Helmet (WAH)',
+];
+
 type SourceAssignment = {
   item: string;
   id: string;
@@ -63,6 +75,9 @@ type SourceAssignment = {
   issueDate: string;
   inspectionDate: string;
   status: string;
+  brandName?: string;
+  manufacturerDate?: string;
+  expiryDate?: string;
 };
 
 type SourceEmployee = {
@@ -134,6 +149,9 @@ function toAssignment(
     issueDate: '',
     inspectionDate: '',
     status: '',
+    brandName: '',
+    manufacturerDate: '',
+    expiryDate: '',
   };
   const missingSource = !source || assignment.quantity <= 0;
   return {
@@ -150,6 +168,9 @@ function toAssignment(
           assignment.status.trim().toLowerCase() === 'nok'
         ? 'Faulty / NOK at inspection'
         : '',
+    brandName: assignment.brandName || '',
+    manufacturerDate: assignment.manufacturerDate || '',
+    expiryDate: assignment.expiryDate || '',
   };
 }
 
@@ -209,9 +230,26 @@ export function ensureRequiredAssignments(employees: Employee[], rules: RuleSet)
   return employees.map((employee) => {
     const requiredItems = rules[employee.skill].map(ruleName);
     const existingByItem = new Map(employee.assignments.map((assignment) => [assignment.item, assignment]));
-    const assignments = requiredItems.map((item) => existingByItem.get(item) ?? toAssignment(item, undefined));
+    const assignments = requiredItems.map((item) => {
+      const existing = existingByItem.get(item);
+      return existing
+        ? {
+            ...existing,
+            brandName: existing.brandName || '',
+            manufacturerDate: existing.manufacturerDate || '',
+            expiryDate: existing.expiryDate || '',
+          }
+        : toAssignment(item, undefined);
+    });
     const requiredSet = new Set(requiredItems);
-    const legacyAssignments = employee.assignments.filter((assignment) => !requiredSet.has(assignment.item));
+    const legacyAssignments = employee.assignments
+      .filter((assignment) => !requiredSet.has(assignment.item))
+      .map((assignment) => ({
+        ...assignment,
+        brandName: assignment.brandName || '',
+        manufacturerDate: assignment.manufacturerDate || '',
+        expiryDate: assignment.expiryDate || '',
+      }));
     return { ...employee, assignments: [...assignments, ...legacyAssignments] };
   });
 }
