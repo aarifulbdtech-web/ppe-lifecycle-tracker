@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -6,7 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   Activity as ActivityIcon, AlertTriangle, ArrowDownToLine, ArrowLeft, ArrowUpRight, Check, CheckCircle2,
   ClipboardCheck, Download, LayoutDashboard, PackageCheck, Pencil, Phone, RotateCcw, Search, Settings,
-  ShieldCheck, SlidersHorizontal, Upload, X,
+  LockKeyhole, LogOut, ShieldCheck, SlidersHorizontal, Upload, X,
 } from 'lucide-react';
 import {
   DEFAULT_RULES, SOURCE_ACTIVITIES, TRACEABLE_PPE_ITEMS, cloneSource, ensureRequiredAssignments, mergeRulesWithDefaults, ruleName, type Activity, type AssignmentStatus, type Employee,
@@ -33,6 +33,8 @@ type Store = {
 };
 
 const PpeContext = createContext<Store | null>(null);
+type AuthContextValue = { logout: () => Promise<void> };
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -100,6 +102,12 @@ function usePpe() {
   return value;
 }
 
+function useAuth() {
+  const value = useContext(AuthContext);
+  if (!value) throw new Error('Authentication is unavailable');
+  return value;
+}
+
 function ruleQty(value: string) { return Number(value.split('::')[1] || '1'); }
 function assignmentKey(assignment: PPEAssignment) { return assignment.id || assignment.item; }
 function mandatoryAssignments(employee: Employee, rules: RuleSet) {
@@ -125,6 +133,8 @@ function statusClass(status: string) {
 function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { toast } = usePpe();
+  const { logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
   const nav = [
     { href: '/', label: 'Overview', icon: LayoutDashboard },
     { href: '/register', label: 'PPE register', icon: ClipboardCheck },
@@ -154,7 +164,7 @@ function Shell({ children }: { children: ReactNode }) {
       <main className="main-area">
         <header className="topbar">
           <span className="eyebrow">Operations / {location === '/' ? 'Today' : location.slice(1).replace('-', ' ')}</span>
-          <div className="actions"><span className="status ok"><span className="pulse" /> Data saved locally</span></div>
+          <div className="actions"><span className="status ok"><span className="pulse" /> Data saved locally</span><button className="btn btn-soft btn-small logout-button" onClick={async () => { setLoggingOut(true); await logout(); }} disabled={loggingOut} data-testid="button-logout"><LogOut size={14} /> {loggingOut ? 'Signing out…' : 'Log out'}</button></div>
         </header>
         <div className="content fade-in">{children}</div>
       </main>
@@ -339,12 +349,92 @@ function downloadFile(content: string, filename: string, type: string) {
   const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
 }
 
+function AuthLoading() {
+  return <main className="auth-screen"><div className="auth-card card auth-loading"><span className="auth-mark"><ShieldCheck size={24} /></span><div className="auth-title">SAFEGRID</div><p>Checking workspace access…</p></div></main>;
+}
+
+function LoginPage({ initialError, onLogin }: { initialError: string; onLogin: (password: string) => Promise<{ ok: boolean; error?: string }> }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(initialError);
+  const [submitting, setSubmitting] = useState(false);
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setSubmitting(true);
+    const result = await onLogin(password);
+    if (!result.ok) setError(result.error || 'Unable to sign in.');
+    setSubmitting(false);
+  };
+  return <main className="auth-screen"><section className="auth-card card">
+    <div className="auth-brand"><span className="auth-mark"><ShieldCheck size={24} /></span><div><strong>SAFEGRID</strong><span>PPE control room</span></div></div>
+    <div className="auth-copy"><div className="eyebrow">Protected workspace</div><h1>Sign in to continue</h1><p>Use the workspace password to access the PPE lifecycle tracker.</p></div>
+    <form className="auth-form" onSubmit={submit}>
+      <label className="field-label" htmlFor="workspace-password">Workspace password</label>
+      <div className="auth-input-wrap"><LockKeyhole size={16} /><input id="workspace-password" className="input" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" required autoFocus data-testid="input-login-password" /></div>
+      {error ? <div className="auth-error" role="alert">{error}</div> : null}
+      <button className="btn btn-primary auth-submit" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'} </button>
+    </form>
+    <p className="auth-note">Single-password access for the operations workspace.</p>
+  </section></main>;
+}
+
+function AuthGate({ children }: { children: ReactNode }) {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+  const [initialError, setInitialError] = useState('');
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/session', { credentials: 'include' })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({})) as { authenticated?: boolean };
+        if (!response.ok) throw new Error('The access service is unavailable.');
+        if (active) setAuthenticated(data.authenticated === true);
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setInitialError(error instanceof Error ? error.message : 'The access service is unavailable.');
+          setAuthenticated(false);
+        }
+      });
+    return () => { active = false; };
+  }, []);
+
+  const login = async (password: string) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await response.json().catch(() => ({})) as { authenticated?: boolean; error?: string };
+      if (!response.ok || data.authenticated !== true) return { ok: false, error: data.error || 'Unable to sign in.' };
+      setAuthenticated(true);
+      setInitialError('');
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'The access service is unavailable.' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } finally {
+      setAuthenticated(false);
+    }
+  };
+
+  if (authenticated === null) return <AuthLoading />;
+  if (!authenticated) return <LoginPage initialError={initialError} onLogin={login} />;
+  return <AuthContext.Provider value={{ logout }}>{children}</AuthContext.Provider>;
+}
+
 function Router() {
   return <Shell><Switch><Route path="/" component={Dashboard} /><Route path="/register" component={Register} /><Route path="/requirements" component={Requirements} /><Route path="/people/:id" component={PersonDetail} /><Route path="/settings" component={SettingsPage} /><Route component={() => <EmptyState title="Page not found" copy="The requested workspace view does not exist." link="/" />} /></Switch></Shell>;
 }
 
 function App() {
-  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><ErrorBoundary><PpeProvider><Router /></PpeProvider></ErrorBoundary></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><TooltipProvider><AuthGate><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><ErrorBoundary><PpeProvider><Router /></PpeProvider></ErrorBoundary></WouterRouter><Toaster /></AuthGate></TooltipProvider></QueryClientProvider>;
 }
 
 export default App;
