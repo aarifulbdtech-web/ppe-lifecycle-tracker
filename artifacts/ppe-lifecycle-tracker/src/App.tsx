@@ -221,24 +221,27 @@ function Dashboard() {
 function Register() {
   const { employees, rules, updateAssignment } = usePpe();
   const [query, setQuery] = useState('');
+  const [employeeId, setEmployeeId] = useState('All employees');
   const [skill, setSkill] = useState('All skills');
   const [subcenter, setSubcenter] = useState('All subcenters');
   const [status, setStatus] = useState('All statuses');
   const [expanded, setExpanded] = useState<string | null>(null);
   const subcenters = [...new Set(employees.map((employee) => employee.subcenter))];
+  const employeeOptions = [...employees].sort((a, b) => a.name.localeCompare(b.name));
   const filtered = employees.filter((employee) => {
     const currentAssignments = mandatoryAssignments(employee, rules);
     const matchesText = `${employee.name} ${employee.id} ${employee.mobile}`.toLowerCase().includes(query.toLowerCase());
+    const matchesEmployee = employeeId === 'All employees' || employee.id === employeeId;
     const matchesSkill = skill === 'All skills' || employee.skill === skill;
     const matchesSubcenter = subcenter === 'All subcenters' || employee.subcenter === subcenter;
     const employeeStatus = currentAssignments.some((item) => badStatuses.includes(item.status)) ? 'Needs attention' : 'Ready';
-    return matchesText && matchesSkill && matchesSubcenter && (status === 'All statuses' || employeeStatus === status);
+    return matchesText && matchesEmployee && matchesSkill && matchesSubcenter && (status === 'All statuses' || employeeStatus === status);
   });
   const statusOptions = ['All statuses', 'Ready', 'Needs attention'];
   return <section>
     <div className="header-row"><div><div className="eyebrow">Register / people & equipment</div><h1 className="page-title">PPE register</h1><p className="page-subtitle">Review each person, then edit the lifecycle record without leaving the register.</p></div><div className="actions"><button className="btn btn-soft" onClick={() => exportCsv(filtered, rules)} data-testid="button-export-register"><Download size={15} /> Export CSV</button></div></div>
     <div className="card table-card">
-     <div className="toolbar"><div className="search-wrap"><Search /><input className="input" type="search" placeholder="Search name, employee ID or mobile" value={query} onChange={(event) => setQuery(event.target.value)} data-testid="input-register-search" /></div><select className="select" value={skill} onChange={(event) => setSkill(event.target.value)} data-testid="select-register-skill"><option>All skills</option><option>Electrical</option><option>Electrical &amp; WAH</option></select><select className="select" value={subcenter} onChange={(event) => setSubcenter(event.target.value)} data-testid="select-register-subcenter"><option>All subcenters</option>{subcenters.map((item) => <option key={item}>{item}</option>)}</select><select className="select" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-register-status">{statusOptions.map((item) => <option key={item}>{item}</option>)}</select><span className="filters-note">{filtered.length} of {employees.length} people</span></div>
+      <div className="toolbar"><div className="search-wrap"><Search /><input className="input" type="search" placeholder="Search name, employee ID or mobile" value={query} onChange={(event) => setQuery(event.target.value)} data-testid="input-register-search" /></div><select className="select" value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} data-testid="select-register-employee"><option value="All employees">All employees</option>{employeeOptions.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.id} · {employee.subcenter}</option>)}</select><select className="select" value={skill} onChange={(event) => setSkill(event.target.value)} data-testid="select-register-skill"><option>All skills</option><option>Electrical</option><option>Electrical &amp; WAH</option></select><select className="select" value={subcenter} onChange={(event) => setSubcenter(event.target.value)} data-testid="select-register-subcenter"><option>All subcenters</option>{subcenters.map((item) => <option key={item}>{item}</option>)}</select><select className="select" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-register-status">{statusOptions.map((item) => <option key={item}>{item}</option>)}</select><span className="filters-note">{filtered.length} of {employees.length} people</span></div>
       {filtered.length === 0 ? <EmptyState title="No people match these filters" copy="Try clearing one of the filters to see the full register." /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>Employee</th><th>Skill / subcenter</th><th>Assigned PPE</th><th>Register health</th><th>Last inspection</th><th /></tr></thead><tbody>{filtered.map((employee) => {
         const latest = mandatoryAssignments(employee, rules).map((item) => item.inspectionDate).sort().at(-1) || '';
         const hasIssue = mandatoryAssignments(employee, rules).some((item) => badStatuses.includes(item.status));
