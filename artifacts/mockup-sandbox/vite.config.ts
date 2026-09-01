@@ -1,3 +1,4 @@
+cat << 'EOF' > /home/runner/workspace/artifacts/mockup-sandbox/vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -5,7 +6,7 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { mockupPreviewPlugin } from "./mockupPreviewPlugin";
 
-// 🚀 Fixed: Provided a fallback port (5173) if process.env.PORT is missing
+// Safely fallback to port 5173 if the environment variable is missing
 const rawPort = process.env.PORT || "5173";
 const port = Number(rawPort);
 
@@ -13,7 +14,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-// 🚀 Fixed: Provided a fallback base path ("/") if process.env.BASE_PATH is missing
+// Safely fallback to root path if missing
 const basePath = process.env.BASE_PATH || "/";
 
 export default defineConfig({
@@ -51,14 +52,13 @@ export default defineConfig({
     fs: {
       strict: true,
     },
-    // 🔗 API Connection Link Layer
     proxy: {
       "/api": {
-        target: "https://onrender.com", // 👈 Replace with your exact Render URL
+        target: "https://onrender.com", // 👈 Replace with your real Render URL
         changeOrigin: true,
         secure: true,
-      },
-    },
+      }
+    }
   },
   preview: {
     port,
@@ -66,4 +66,4 @@ export default defineConfig({
     allowedHosts: true,
   },
 });
-
+EOF
