@@ -312,5 +312,15 @@ export function ensureRequiredAssignments(employees: Employee[], rules: RuleSet)
   });
 }
 
+export function createEmployeeRecord(
+  employee: Omit<Employee, 'assignments'>,
+  rules: RuleSet,
+): Employee {
+  return {
+    ...employee,
+    assignments: rules[employee.skill].map((rawItem) => toAssignment(ruleName(rawItem), undefined)),
+  };
+}
+
 export const cloneSource = () =>
   JSON.parse(JSON.stringify(SOURCE_EMPLOYEES)) as Employee[];

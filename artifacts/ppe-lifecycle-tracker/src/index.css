@@ -180,6 +180,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .input, .select { height: 36px; border: 1px solid hsl(var(--input)); border-radius: 6px; background: hsl(var(--card)); color: hsl(var(--foreground)); padding: 0 10px; font-size: 12px; width: 100%; }
 .search-wrap .input { padding-left: 34px; }
 .select { width: auto; min-width: 140px; }
+.create-employee-card { padding: 20px; margin-bottom: 15px; }
+.create-employee-card .panel-heading { margin-bottom: 15px; }
+.create-employee-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.create-employee-grid .select { width: 100%; }
+.form-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 17px; }
+.form-error { color: hsl(var(--destructive)); background: hsl(var(--destructive) / .08); border: 1px solid hsl(var(--destructive) / .16); border-radius: 6px; padding: 9px 11px; margin-top: 14px; font-size: 11px; }
 .table-scroll { overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; min-width: 820px; }
 .data-table th { text-align: left; font: 500 10px var(--app-font-mono); text-transform: uppercase; letter-spacing: .09em; color: hsl(var(--muted-foreground)); padding: 12px 17px; background: hsl(var(--muted) / .46); white-space: nowrap; }
@@ -299,6 +305,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .toolbar { padding: 12px; }
   .search-wrap { min-width: 100%; }
   .select { flex: 1; min-width: 0; }
+  .create-employee-card { padding: 16px; }
+  .create-employee-grid { grid-template-columns: 1fr; }
   .filters-note { width: 100%; margin: 0; }
   .detail-grid { grid-template-columns: 1fr; }
   .assignment-row { grid-template-columns: 1fr 1fr; gap: 10px; }

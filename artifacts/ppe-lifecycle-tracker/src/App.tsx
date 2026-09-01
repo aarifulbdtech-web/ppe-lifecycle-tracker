@@ -5,11 +5,11 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   Activity as ActivityIcon, AlertTriangle, ArrowDownToLine, ArrowLeft, ArrowUpRight, Check, CheckCircle2,
-  ClipboardCheck, Download, LayoutDashboard, PackageCheck, Pencil, Phone, RotateCcw, Search, Settings,
+  ClipboardCheck, Download, LayoutDashboard, PackageCheck, Pencil, Phone, Plus, RotateCcw, Search, Settings,
   LockKeyhole, LogOut, ShieldCheck, SlidersHorizontal, Upload, X,
 } from 'lucide-react';
 import {
-  DEFAULT_RULES, SOURCE_ACTIVITIES, TRACEABLE_PPE_ITEMS, cloneSource, ensureRequiredAssignments, mergeRulesWithDefaults, ruleName, type Activity, type AssignmentStatus, type Employee,
+  DEFAULT_RULES, SOURCE_ACTIVITIES, TRACEABLE_PPE_ITEMS, cloneSource, createEmployeeRecord, ensureRequiredAssignments, mergeRulesWithDefaults, ruleName, type Activity, type AssignmentStatus, type Employee,
   type PPEAssignment, type RuleSet,
 } from './data';
 import { Link, Route, Switch, Router as WouterRouter, useLocation, useParams } from 'wouter';
@@ -24,6 +24,7 @@ type Store = {
   employees: Employee[];
   rules: RuleSet;
   activities: Activity[];
+  addEmployee: (employee: Employee) => void;
   updateAssignment: (employeeId: string, assignmentId: string, patch: Partial<PPEAssignment>) => void;
   updateEmployee: (employeeId: string, patch: Partial<Employee>) => void;
   updateRule: (skill: keyof RuleSet, item: string, quantity: number) => void;
@@ -61,6 +62,18 @@ function PpeProvider({ children }: { children: ReactNode }) {
     setToast(message);
     window.setTimeout(() => setToast(''), 2600);
   };
+  const addEmployee = (employee: Employee) => {
+    setEmployees((current) => [...current, employee]);
+    setActivities((items) => [{
+      date: 'Just now',
+      action: 'Employee added',
+      employee: employee.name,
+      item: 'PPE register initialized',
+      subcenter: employee.subcenter,
+      outcome: 'New joiner added',
+    }, ...items].slice(0, 8));
+    notify('Employee added to PPE register');
+  };
   const updateAssignment = (employeeId: string, assignmentId: string, patch: Partial<PPEAssignment>) => {
     setEmployees((current) => current.map((employee) => {
       if (employee.id !== employeeId) return employee;
@@ -93,7 +106,7 @@ function PpeProvider({ children }: { children: ReactNode }) {
     setActivities(SOURCE_ACTIVITIES);
     notify('Source snapshot restored');
   };
-  return <PpeContext.Provider value={{ employees, rules, activities, updateAssignment, updateEmployee, updateRule, reset, notify, toast }}>{children}</PpeContext.Provider>;
+  return <PpeContext.Provider value={{ employees, rules, activities, addEmployee, updateAssignment, updateEmployee, updateRule, reset, notify, toast }}>{children}</PpeContext.Provider>;
 }
 
 function usePpe() {
@@ -219,13 +232,23 @@ function Dashboard() {
 }
 
 function Register() {
-  const { employees, rules, updateAssignment } = usePpe();
+  const { employees, rules, addEmployee, updateAssignment } = usePpe();
   const [query, setQuery] = useState('');
   const [employeeId, setEmployeeId] = useState('All employees');
   const [skill, setSkill] = useState('All skills');
   const [subcenter, setSubcenter] = useState('All subcenters');
   const [status, setStatus] = useState('All statuses');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showCreateEmployee, setShowCreateEmployee] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({
+    id: '',
+    name: '',
+    mobile: '',
+    designation: 'Technician',
+    skill: 'Electrical' as Employee['skill'],
+    subcenter: '',
+  });
+  const [createError, setCreateError] = useState('');
   const subcenters = [...new Set(employees.map((employee) => employee.subcenter))];
   const employeeOptions = [...employees].sort((a, b) => a.name.localeCompare(b.name));
   const filtered = employees.filter((employee) => {
@@ -238,8 +261,39 @@ function Register() {
     return matchesText && matchesEmployee && matchesSkill && matchesSubcenter && (status === 'All statuses' || employeeStatus === status);
   });
   const statusOptions = ['All statuses', 'Ready', 'Needs attention'];
+  const handleCreateEmployee = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const employee = {
+      ...newEmployee,
+      id: newEmployee.id.trim(),
+      name: newEmployee.name.trim(),
+      mobile: newEmployee.mobile.trim(),
+      designation: newEmployee.designation.trim() || 'Technician',
+      subcenter: newEmployee.subcenter.trim(),
+    };
+    if (!employee.id || !employee.name || !employee.subcenter) {
+      setCreateError('Employee ID, name, and subcenter are required.');
+      return;
+    }
+    if (employees.some((current) => current.id === employee.id)) {
+      setCreateError('That employee ID is already in the register.');
+      return;
+    }
+    const record = createEmployeeRecord(employee, rules);
+    addEmployee(record);
+    setEmployeeId(record.id);
+    setQuery('');
+    setSkill('All skills');
+    setSubcenter('All subcenters');
+    setStatus('All statuses');
+    setExpanded(null);
+    setNewEmployee({ id: '', name: '', mobile: '', designation: 'Technician', skill: 'Electrical', subcenter: '' });
+    setCreateError('');
+    setShowCreateEmployee(false);
+  };
   return <section>
-    <div className="header-row"><div><div className="eyebrow">Register / people & equipment</div><h1 className="page-title">PPE register</h1><p className="page-subtitle">Review each person, then edit the lifecycle record without leaving the register.</p></div><div className="actions"><button className="btn btn-soft" onClick={() => exportCsv(filtered, rules)} data-testid="button-export-register"><Download size={15} /> Export CSV</button></div></div>
+    <div className="header-row"><div><div className="eyebrow">Register / people & equipment</div><h1 className="page-title">PPE register</h1><p className="page-subtitle">Review each person, then edit the lifecycle record without leaving the register.</p></div><div className="actions"><button className="btn btn-primary" onClick={() => { setShowCreateEmployee((current) => !current); setCreateError(''); }} data-testid="button-new-employee"><Plus size={15} /> {showCreateEmployee ? 'Close form' : 'New employee'}</button><button className="btn btn-soft" onClick={() => exportCsv(filtered, rules)} data-testid="button-export-register"><Download size={15} /> Export CSV</button></div></div>
+    {showCreateEmployee ? <form className="card create-employee-card" onSubmit={handleCreateEmployee} noValidate><div className="panel-heading"><div><h2 className="panel-title">Add new employee</h2><p className="panel-kicker">Create the employee profile and initialize their mandatory PPE lines.</p></div><span className="eyebrow">New joiner</span></div><div className="create-employee-grid"><div><label className="field-label" htmlFor="new-employee-id">Employee ID</label><input id="new-employee-id" className="input" value={newEmployee.id} onChange={(event) => setNewEmployee((current) => ({ ...current, id: event.target.value }))} placeholder="e.g. 12345" required data-testid="input-new-employee-id" /></div><div><label className="field-label" htmlFor="new-employee-name">Employee name</label><input id="new-employee-name" className="input" value={newEmployee.name} onChange={(event) => setNewEmployee((current) => ({ ...current, name: event.target.value }))} placeholder="Full name" required data-testid="input-new-employee-name" /></div><div><label className="field-label" htmlFor="new-employee-mobile">Mobile</label><input id="new-employee-mobile" className="input" type="tel" value={newEmployee.mobile} onChange={(event) => setNewEmployee((current) => ({ ...current, mobile: event.target.value }))} placeholder="Mobile number" data-testid="input-new-employee-mobile" /></div><div><label className="field-label" htmlFor="new-employee-designation">Designation</label><input id="new-employee-designation" className="input" value={newEmployee.designation} onChange={(event) => setNewEmployee((current) => ({ ...current, designation: event.target.value }))} placeholder="Technician" data-testid="input-new-employee-designation" /></div><div><label className="field-label" htmlFor="new-employee-skill">Skill</label><select id="new-employee-skill" className="select input" value={newEmployee.skill} onChange={(event) => setNewEmployee((current) => ({ ...current, skill: event.target.value as Employee['skill'] }))} data-testid="select-new-employee-skill"><option>Electrical</option><option>Electrical &amp; WAH</option></select></div><div><label className="field-label" htmlFor="new-employee-subcenter">Subcenter</label><input id="new-employee-subcenter" className="input" list="register-subcenters" value={newEmployee.subcenter} onChange={(event) => setNewEmployee((current) => ({ ...current, subcenter: event.target.value }))} placeholder="Subcenter name" required data-testid="input-new-employee-subcenter" /><datalist id="register-subcenters">{subcenters.map((item) => <option key={item} value={item} />)}</datalist></div></div>{createError ? <div className="form-error" role="alert">{createError}</div> : null}<div className="form-actions"><button type="button" className="btn btn-soft" onClick={() => { setShowCreateEmployee(false); setCreateError(''); }} data-testid="button-cancel-new-employee">Cancel</button><button type="submit" className="btn btn-primary" data-testid="button-save-new-employee"><Plus size={15} /> Add employee</button></div></form> : null}
     <div className="card table-card">
       <div className="toolbar"><div className="search-wrap"><Search /><input className="input" type="search" placeholder="Search name, employee ID or mobile" value={query} onChange={(event) => setQuery(event.target.value)} data-testid="input-register-search" /></div><select className="select" value={employeeId} onChange={(event) => setEmployeeId(event.target.value)} data-testid="select-register-employee"><option value="All employees">All employees</option>{employeeOptions.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.id} · {employee.subcenter}</option>)}</select><select className="select" value={skill} onChange={(event) => setSkill(event.target.value)} data-testid="select-register-skill"><option>All skills</option><option>Electrical</option><option>Electrical &amp; WAH</option></select><select className="select" value={subcenter} onChange={(event) => setSubcenter(event.target.value)} data-testid="select-register-subcenter"><option>All subcenters</option>{subcenters.map((item) => <option key={item}>{item}</option>)}</select><select className="select" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-register-status">{statusOptions.map((item) => <option key={item}>{item}</option>)}</select><span className="filters-note">{filtered.length} of {employees.length} people</span></div>
       {filtered.length === 0 ? <EmptyState title="No people match these filters" copy="Try clearing one of the filters to see the full register." /> : <div className="table-scroll"><table className="data-table"><thead><tr><th>Employee</th><th>Skill / subcenter</th><th>Assigned PPE</th><th>Register health</th><th>Last inspection</th><th /></tr></thead><tbody>{filtered.map((employee) => {
