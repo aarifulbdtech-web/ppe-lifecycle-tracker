@@ -207,7 +207,7 @@ function toAssignment(
     id: assignment.id,
     quantity: assignment.quantity,
     purchaseDate: assignment.purchaseDate,
-    issueDate: assignment.issueDate,
+    issueDate: assignment.issueDate || assignment.purchaseDate,
     inspectionDate: assignment.inspectionDate,
     status: normalizeStatus(assignment.status, assignment.quantity),
     reason: missingSource
@@ -292,6 +292,7 @@ export function ensureRequiredAssignments(employees: Employee[], rules: RuleSet)
       return existing
         ? {
             ...existing,
+            issueDate: existing.issueDate || sourceAssignment?.issueDate || existing.purchaseDate || '',
             brandName: existing.brandName || sourceAssignment?.brandName || '',
             manufacturerDate: existing.manufacturerDate || sourceAssignment?.manufacturerDate || '',
             expiryDate: existing.expiryDate || sourceAssignment?.expiryDate || '',
