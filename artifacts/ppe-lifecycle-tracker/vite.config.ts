@@ -5,23 +5,16 @@ import { defineConfig } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-// Safely handle the port assignment with a fallback default of 3000
-const rawPort = process.env.PORT || '3000';
-const port = parseInt(rawPort, 10);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-// Safely handle the base path with a fallback default of '/'
 const basePath = process.env.BASE_PATH || '/';
 
 export default defineConfig({
   base: basePath,
+
   plugins: [
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),
+
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined
       ? [
@@ -30,15 +23,18 @@ export default defineConfig({
               root: path.resolve(import.meta.dirname, '..'),
             }),
           ),
+
           await import('@replit/vite-plugin-dev-banner').then((m) =>
             m.devBanner(),
           ),
         ]
       : []),
   ],
+
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'src'),
+
       '@assets': path.resolve(
         import.meta.dirname,
         '..',
@@ -46,26 +42,31 @@ export default defineConfig({
         'attached_assets',
       ),
     },
+
     dedupe: ['react', 'react-dom'],
   },
+
   root: path.resolve(import.meta.dirname),
+
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
   },
+
   server: {
-    port,
-    strictPort: true,
+    port: Number(process.env.PORT) || 3000,
     host: '0.0.0.0',
+    strictPort: false,
     allowedHosts: true,
+
     fs: {
       strict: true,
     },
   },
+
   preview: {
-    port,
+    port: Number(process.env.PORT) || 3000,
     host: '0.0.0.0',
     allowedHosts: true,
   },
 });
-
