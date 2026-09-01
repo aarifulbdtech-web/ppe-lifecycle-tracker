@@ -1,2 +1,9 @@
 User-agent: *
 Allow: /
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
+

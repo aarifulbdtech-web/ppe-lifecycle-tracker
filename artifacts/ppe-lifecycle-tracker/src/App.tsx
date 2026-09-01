@@ -369,6 +369,7 @@ function LoginPage({ initialError, onLogin }: { initialError: string; onLogin: (
     <div className="auth-brand"><span className="auth-mark"><ShieldCheck size={24} /></span><div><strong>SAFEGRID</strong><span>PPE control room</span></div></div>
     <div className="auth-copy"><div className="eyebrow">Protected workspace</div><h1>Sign in to continue</h1><p>Use the workspace password to access the PPE lifecycle tracker.</p></div>
     <form className="auth-form" onSubmit={submit}>
+      <input className="auth-username" type="text" name="username" autoComplete="username" value="workspace" readOnly tabIndex={-1} aria-hidden="true" />
       <label className="field-label" htmlFor="workspace-password">Workspace password</label>
       <div className="auth-input-wrap"><LockKeyhole size={16} /><input id="workspace-password" className="input" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" required autoFocus data-testid="input-login-password" /></div>
       {error ? <div className="auth-error" role="alert">{error}</div> : null}

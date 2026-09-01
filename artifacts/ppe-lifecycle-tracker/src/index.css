@@ -240,6 +240,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .auth-copy h1 { margin: 8px 0 7px; font: 700 29px/1.05 var(--font-display); letter-spacing: -.045em; }
 .auth-copy p { margin: 0; color: hsl(var(--muted-foreground)); font-size: 13px; line-height: 1.55; }
 .auth-form { display: grid; gap: 9px; }
+.auth-username { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .auth-input-wrap { position: relative; }
 .auth-input-wrap svg { position: absolute; left: 11px; top: 13px; color: hsl(var(--muted-foreground)); }
 .auth-input-wrap .input { padding-left: 35px; height: 42px; }
