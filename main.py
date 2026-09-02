@@ -1,5 +1,11 @@
 import os
-from flask import Flask # or from fastapi import FastAPI
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"status": "App is running with FastAPI!"}
 
 app = Flask(__name__)
 
