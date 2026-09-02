@@ -7,22 +7,22 @@ settings:
 catalogs:
   default:
     '@replit/vite-plugin-cartographer':
-      specifier: ^0.5.21
+      specifier: 0.5.21
       version: 0.5.21
     '@replit/vite-plugin-dev-banner':
-      specifier: ^0.1.1
+      specifier: 0.1.2
       version: 0.1.2
     '@replit/vite-plugin-runtime-error-modal':
-      specifier: ^0.0.6
+      specifier: 0.0.6
       version: 0.0.6
     '@tailwindcss/vite':
-      specifier: ^4.1.14
+      specifier: 4.3.3
       version: 4.3.3
     '@tanstack/react-query':
-      specifier: ^5.90.21
+      specifier: 5.101.4
       version: 5.101.4
     '@types/node':
-      specifier: ^25.3.3
+      specifier: 25.9.5
       version: 25.9.5
     '@types/react':
       specifier: ^19.2.0
@@ -31,7 +31,7 @@ catalogs:
       specifier: ^19.2.0
       version: 19.2.3
     '@vitejs/plugin-react':
-      specifier: ^5.0.4
+      specifier: 5.2.0
       version: 5.2.0
     class-variance-authority:
       specifier: ^0.7.1
@@ -58,16 +58,16 @@ catalogs:
       specifier: ^3.3.1
       version: 3.6.0
     tailwindcss:
-      specifier: ^4.1.14
+      specifier: 4.3.3
       version: 4.3.3
     tsx:
       specifier: ^4.21.0
       version: 4.23.1
     vite:
-      specifier: ^7.3.2
+      specifier: 7.3.6
       version: 7.3.6
     zod:
-      specifier: ^3.25.76
+      specifier: 3.25.76
       version: 3.25.76
 
 overrides:
@@ -160,7 +160,16 @@ importers:
       '@replit/connectors-sdk':
         specifier: ^0.4.1
         version: 0.4.1
+      pg:
+        specifier: ^8.22.0
+        version: 8.22.0
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
       prettier:
         specifier: ^3.9.6
         version: 3.9.6
@@ -600,6 +609,10 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.4(react@19.1.0)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.9.5
 
   lib/api-spec:
     devDependencies:
