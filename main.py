@@ -1,4 +1,10 @@
-import os
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "PPE Lifecycle Tracker API is running!"}
 from fastapi import FastAPI
 
 app = FastAPI()
